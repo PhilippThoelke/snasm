@@ -173,21 +173,39 @@ update_snake:
 		mov ax, [snake_top+0]
 		sub ax, 1
 		mov [snake_top+0], ax
-		ret
+		jmp .done
 	.up:
 		mov ax, [snake_top+2]
 		sub ax, 1
 		mov [snake_top+2], ax
-		ret
+		jmp .done
 	.right:
 		mov ax, [snake_top+0]
 		add ax, 1
 		mov [snake_top+0], ax
-		ret
+		jmp .done
 	.down:
 		mov ax, [snake_top+2]
 		add ax, 1
 		mov [snake_top+2], ax
+		jmp .done
+
+	.done:
+		; do apple and snake head x coordinate match?
+		mov ax, [snake_top+0]
+		cmp ax, [apple_x]
+		jne .abort
+		; do apple and snake head y coordinate match?
+		mov ax, [snake_top+2]
+		cmp ax, [apple_y]
+		jne .abort
+
+		mov ax, [snake_length]
+		inc ax
+		mov [snake_length], ax
+		call reset_apple
+
+	.abort:
 		ret
 
 draw_snake:
@@ -248,6 +266,10 @@ draw_apple:
 	call square
 	ret
 
+; include magic bootloader word at the end of the first sector
+times 510-($-$$) db 0
+dw 0xaa55
+
 draw_grid:
 	; set color to white
 	mov ax, 31
@@ -293,10 +315,6 @@ draw_grid:
 		cmp ax, width
 		jb .vertical
 	ret
-
-; include magic bootloader word at the end of the first sector
-times 510-($-$$) db 0
-dw 0xaa55
 
 ; [square_top] = x, [square_top+2] = y, [square_top+4] = w, [square_top+6] = h, [square_top+8] = color
 square:
