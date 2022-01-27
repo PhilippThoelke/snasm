@@ -51,11 +51,27 @@ reset_snake:
 	ret
 
 reset_apple:
-	call rand
+	; random value (time since midnight) to dx
+	xor ax, ax
+	int 0x1a
+
+	; set x coordinate to rand % num_cols
+	mov ax, dx
 	xor dx, dx
 	mov cx, width / grid_size
 	div cx
 	mov [apple_x], dx
+
+	; random value (time since midnight) to dx
+	xor ax, ax
+	int 0x1a
+
+	; set y coordinate to rand % num_rows
+	mov ax, dx
+	xor dx, dx
+	mov cx, height / grid_size
+	div cx
+	mov [apple_y], dx
 	ret
 
 keyboard_input:
@@ -317,11 +333,6 @@ square:
 		loop .yloop
 	pop ds						; restore segment register
 	ret
-
-rand:
-	mov ax, 0x0040
-	mov es, ax					; load segment for BIOS data area
-	mov ax, es:0x006c			; load number of IRQ8 since boot into ax
 
 ; bh = clear color
 clear:
