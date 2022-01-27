@@ -173,24 +173,65 @@ update_snake:
 		mov ax, [snake_top+0]
 		sub ax, 1
 		mov [snake_top+0], ax
-		jmp .done
+		jmp .check_left
 	.up:
 		mov ax, [snake_top+2]
 		sub ax, 1
 		mov [snake_top+2], ax
-		jmp .done
+		jmp .check_top
 	.right:
 		mov ax, [snake_top+0]
 		add ax, 1
 		mov [snake_top+0], ax
-		jmp .done
+		jmp .check_right
 	.down:
 		mov ax, [snake_top+2]
 		add ax, 1
 		mov [snake_top+2], ax
-		jmp .done
+		jmp .check_bottom
+
+	.check_left:
+	; check if snake moved past left edge (x coordinate overflowed)
+	mov ax, [snake_top+0]
+	cmp ax, 0xffff
+	jne .done
+	; move snake head to right screen edge
+	mov ax, width / grid_size - 1
+	mov [snake_top+0], ax
+	jmp .done
+
+	.check_right:
+	; check if snake moved past right edge
+	mov ax, [snake_top+0]
+	cmp ax, width / grid_size
+	jne .done
+	; move snake head to left screen edge
+	mov ax, 0
+	mov [snake_top+0], ax
+	jmp .done
+
+	.check_top:
+	; check if snake moved past top edge (y coordinate overflowed)
+	mov ax, [snake_top+2]
+	cmp ax, 0xffff
+	jne .done
+	; move snake head to bottom screen edge
+	mov ax, height / grid_size - 1
+	mov [snake_top+2], ax
+	jmp .done
+
+	.check_bottom:
+	; check if snake moved past bottom edge
+	mov ax, [snake_top+2]
+	cmp ax, height / grid_size
+	jne .done
+	; move snake head to top screen edge
+	mov ax, 0
+	mov [snake_top+2], ax
+	jmp .done
 
 	.done:
+	; check for a collision with the snake's body
 	mov cx, [snake_length]
 	.bite_loop:
 		push cx
@@ -225,11 +266,11 @@ update_snake:
 		pop cx
 		loop .bite_loop
 
-	; do apple and snake head x coordinate match?
+	; check if apple and snake x coordinates match
 	mov ax, [snake_top+0]
 	cmp ax, [apple_x]
 	jne .abort
-	; do apple and snake head y coordinate match?
+	; check if apple and snake y coordinates match
 	mov ax, [snake_top+2]
 	cmp ax, [apple_y]
 	jne .abort
@@ -278,6 +319,10 @@ draw_snake:
 		loop .loop
 	ret
 
+; include magic bootloader word at the end of the first sector
+times 510-($-$$) db 0
+dw 0xaa55
+
 draw_apple:
 	mov ax, grid_size
 	mov [square_top+4], ax		; set width to grid_size
@@ -299,10 +344,6 @@ draw_apple:
 
 	call square
 	ret
-
-; include magic bootloader word at the end of the first sector
-times 510-($-$$) db 0
-dw 0xaa55
 
 draw_grid:
 	; set color to white
