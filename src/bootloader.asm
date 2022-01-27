@@ -138,7 +138,7 @@ keyboard_input:
 update_snake:
 	; shift segment data by one
 	mov cx, [snake_length]
-	.loop:
+	.copy_loop:
 		push cx
 
 		; compute current segment address: 4*(cx-1)+snake_top
@@ -155,7 +155,7 @@ update_snake:
 		mov [bx+6], ax
 
 		pop cx
-		loop .loop
+		loop .copy_loop
 
 	; create new head segment
 	mov ax, [direction]
@@ -191,19 +191,53 @@ update_snake:
 		jmp .done
 
 	.done:
-		; do apple and snake head x coordinate match?
-		mov ax, [snake_top+0]
-		cmp ax, [apple_x]
-		jne .abort
-		; do apple and snake head y coordinate match?
-		mov ax, [snake_top+2]
-		cmp ax, [apple_y]
-		jne .abort
+	mov cx, [snake_length]
+	.bite_loop:
+		push cx
 
-		mov ax, [snake_length]
-		inc ax
-		mov [snake_length], ax
+		; don't check for the head colliding with itself
+		cmp cx, 1
+		je .continue
+
+		; compute current segment address: 4*(cx-1)+snake_top
+		mov ax, 4
+		sub cx, 1
+		mul cx
+		mov bx, ax
+		add bx, snake_top
+
+		; check for x overlap
+		mov ax, [snake_top+0]
+		cmp ax, [bx+0]
+		jne .continue
+		; ceck for y overlap
+		mov ax, [snake_top+2]
+		cmp ax, [bx+2]
+		jne .continue
+
+		; game over
+		call reset_snake
 		call reset_apple
+		pop cx
+		ret
+
+		.continue:
+		pop cx
+		loop .bite_loop
+
+	; do apple and snake head x coordinate match?
+	mov ax, [snake_top+0]
+	cmp ax, [apple_x]
+	jne .abort
+	; do apple and snake head y coordinate match?
+	mov ax, [snake_top+2]
+	cmp ax, [apple_y]
+	jne .abort
+
+	mov ax, [snake_length]
+	inc ax
+	mov [snake_length], ax
+	call reset_apple
 
 	.abort:
 		ret
